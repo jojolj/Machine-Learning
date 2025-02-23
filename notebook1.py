@@ -1,0 +1,626 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "d1055cab",
+   "metadata": {},
+   "source": [
+    "# Introduction\n",
+    "\n",
+    "The course DATA.ML.200 Pattern Recognition and Machine Learning assumess that you have the basic knowledge about machine learning (e.g. DATA.ML.100), you know well the engineering mathematics and you have moderately good programming skills. The course is for MSc level studies in engineering, and particularly for students of computer science (information technology), electrical engineering, and robotics."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6e125007",
+   "metadata": {},
+   "source": [
+    "## Background\n",
+    "\n",
+    "Before delving into technical stuff, let's spend some time on discussing those more philosophical questions that the (dummy) general public and press is interested about *artificial intelligence* (AI). "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "79987144",
+   "metadata": {},
+   "source": [
+    "### Intelligence"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "8308f159",
+   "metadata": {},
+   "source": [
+    "### Consciousness"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "id": "1aeec5ee-18de-44f1-a745-2818e674721a",
+   "metadata": {},
+   "source": [
+    "<div>\n",
+    "<img src=\"pictures/origins_of_life.png\" width=600>\n",
+    "</div>\n",
+    "\n",
+    "For more information:\n",
+    "\n",
+    " * https://www.pmfias.com/origin-evolution-life-earth-biological-evolution/\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "aa87d735",
+   "metadata": {},
+   "source": [
+    "### Representation "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "508482e1",
+   "metadata": {},
+   "source": [
+    "## Conventional machine learning\n",
+    "\n",
+    "A vast majority of the machine learning problems encountered in the real life can be solved by using the functionality provided in \n",
+    "\n",
+    " * [scikit-learn](https://scikit-learn.org/stable/) machine learning library for Python\n",
+    " \n",
+    " and therefore we next quickly go through the topics familiar from DATA.ML.100"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "456e8d8d-fb8a-4cc9-ba12-371043dc763e",
+   "metadata": {},
+   "source": [
+    "**Install Python**\n",
+    "\n",
+    "Create a new Anaconda environment for this course\n",
+    "```bash\n",
+    " $ conda update conda\n",
+    " $ conda update --all\n",
+    " $ conda create -n dataml200-24\n",
+    " $ conda activate dataml200-24\n",
+    " (dataml200-24) $ conda install python=3.11\n",
+    " (dataml200-24) $ conda install scikit-learn\n",
+    " (dataml200-24) $ conda install matplotlib\n",
+    " (dataml200-24) $ conda install pandas\n",
+    "```\n",
+    "\n",
+    "Install Jupyter notebook\n",
+    "```bash\n",
+    " (dataml200-24) $ conda install -c conda-forge notebook\n",
+    "```\n",
+    "\n",
+    "which allows to run the provided lecture notebooks\n",
+    "```bash\n",
+    " (dataml200-24) $ jupyter notebook\n",
+    "```"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9efb73a6",
+   "metadata": {},
+   "source": [
+    "### Classification"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "32007f58",
+   "metadata": {},
+   "source": [
+    "#### Demo: Classification of text files\n",
+    "\n",
+    "20 News Groups is a dataset of user written messages posted to 20 different discussion groups"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "cd3b62aa",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn.datasets import fetch_20newsgroups\n",
+    "from pprint import pprint\n",
+    "\n",
+    "def size_mb(docs):\n",
+    "    return sum(len(s.encode(\"utf-8\")) for s in docs) / 1e6\n",
+    "\n",
+    "data_train = fetch_20newsgroups(subset='train')\n",
+    "data_test = fetch_20newsgroups(subset='test')\n",
+    "\n",
+    "pprint(data_train.target_names)\n",
+    "\n",
+    "print(f'Total of {len(data_train.data)} posts in the dataset and the total size is {size_mb(data_train.data):.2f}MB')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "57a33df7-c9b2-47a2-a7ec-14e5b115f83d",
+   "metadata": {},
+   "source": [
+    "Print a few examples"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d5b249c1-f2f4-432c-8102-b25f482b96fe",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sample_id = 0\n",
+    "sample_target = data_train.target[sample_id]\n",
+    "print(f'Class id: {sample_target} and class name {data_train.target_names[sample_target]}')\n",
+    "print(data_train.data[sample_id])\n",
+    "\n",
+    "sample_id = 1\n",
+    "sample_target = data_train.target[sample_id]\n",
+    "print(f'Class id: {sample_target} and class name {data_train.target_names[sample_target]}')\n",
+    "print(data_train.data[sample_id])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "3a7d0407-47b1-42f8-bc2a-db3a2c0f09be",
+   "metadata": {},
+   "source": [
+    "The posts that are strings of arbitrary length must be converted to fixed length *feature vectors*. The simplest feature is called as *Bag of Words* (BoW)."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "04d525ff-5fdf-47e6-bbc4-2895ace35011",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn.feature_extraction.text import CountVectorizer\n",
+    "\n",
+    "# Simple examples strings\n",
+    "corpus = ['This is the first document.',\n",
+    "          'This document is the second document.',\n",
+    "          'And this is the third one.',\n",
+    "          'Is this the first document?'\n",
+    "          ]\n",
+    "vectorizer = CountVectorizer()\n",
+    "\n",
+    "# This makes vocabulary from the given data\n",
+    "X = vectorizer.fit_transform(corpus)\n",
+    "pprint(vectorizer.get_feature_names_out())\n",
+    "pprint(corpus)\n",
+    "pprint(X.toarray())"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "7fffef71-9e9e-4441-a81e-e1ddd46f9fee",
+   "metadata": {},
+   "source": [
+    "Construct vocabulary from training data"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "1fc9efd2-6c23-4a60-b2cd-7fbeadeb78ea",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Form data\n",
+    "vectorizer = CountVectorizer(stop_words=\"english\")\n",
+    "X_train = vectorizer.fit_transform(data_train.data)\n",
+    "print(f'Size of the vocabulary is {len(vectorizer.get_feature_names_out())}')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "63b9f6ae-8ec2-408f-b5ef-10bf27b68219",
+   "metadata": {},
+   "source": [
+    "Transform also test data."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "cf61471b-1e4e-44ea-a8d2-bb4bb9987b32",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "X_test = vectorizer.transform(data_test.data)\n",
+    "y_train, y_test = data_train.target, data_test.target\n",
+    "print(X_train.shape)\n",
+    "print(y_train.shape)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "0796248e-ac55-4ed3-ad71-fdf44323670b",
+   "metadata": {},
+   "source": [
+    "Pick one of the Scikit-Learn classifiers and train using the training data."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "67d5596b-1c30-44c2-8f0a-b55b7b088ed6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn.ensemble import RandomForestClassifier\n",
+    "\n",
+    "clf = RandomForestClassifier(n_estimators=10)\n",
+    "clf = clf.fit(X_train, y_train)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b7f0345f-2e22-4a0a-b4f1-27d3e4d993c2",
+   "metadata": {},
+   "source": [
+    "Evaluate the classifier using ready-made functions in Scikit-Learn"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "7d997bb4-0e11-4bc0-9d04-3244dd2688b8",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import matplotlib.pyplot as plt\n",
+    "from sklearn.metrics import ConfusionMatrixDisplay\n",
+    "from sklearn.metrics import accuracy_score\n",
+    "pred = clf.predict(X_test)\n",
+    "\n",
+    "# Classification accuracy\n",
+    "acc = accuracy_score(y_test, pred)\n",
+    "print(f'Classification accuracy {acc:.2f}')\n",
+    "\n",
+    "# Confusion matrix\n",
+    "fig, ax = plt.subplots(figsize=(10, 5))\n",
+    "ConfusionMatrixDisplay.from_predictions(y_test, pred, ax=ax)\n",
+    "ax.xaxis.set_ticklabels(data_train.target_names)\n",
+    "ax.yaxis.set_ticklabels(data_train.target_names)\n",
+    "plt.xticks(rotation=90)\n",
+    "ax.set_title(f\"Confusion Matrix for {clf.__class__.__name__}\\non the original documents\")\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "efa04657-0c92-4c72-a277-6f6ddc5ed273",
+   "metadata": {},
+   "source": [
+    "### Detection\n",
+    "\n",
+    "Detection is a special case of classification, but **do not** confuse detection with classification since the evaluation is very different.\n",
+    "\n",
+    " * [Receiver operating characteristic](https://en.wikipedia.org/wiki/Receiver_operating_characteristic) (Wikipedia)\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1827eb90-fcbc-4c69-abbc-0dd3e2013236",
+   "metadata": {},
+   "source": [
+    "#### Tracking\n",
+    "\n",
+    "Tracking is a special case of detection.\n",
+    "\n",
+    " * Demo: Python/opencv_tracker_webcam.py\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "23eaa0ae-a436-4533-81a7-257130f9338e",
+   "metadata": {},
+   "source": [
+    "## Regression"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "8903f8f8-5095-45f7-a0f7-4c2e6cf8708d",
+   "metadata": {},
+   "source": [
+    "#### Demo: Boston house prices regression\n",
+    "\n",
+    "A standard dataset for data analysis. The dataset provides 80 input variables of various type and one output variable (the house selling price). Pandas provides many tools for data analysis and Sklearn supports Pandas. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "4206d08f-fe78-420f-aa66-4f47fabf78c6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn.datasets import fetch_openml\n",
+    "\n",
+    "df = fetch_openml(name=\"house_prices\", as_frame=True, parser=\"pandas\")\n",
+    "X = df.data\n",
+    "y = df.target\n",
+    "print(X.head())\n",
+    "print(y.head())\n",
+    "print(X.shape)\n",
+    "print(y.shape)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f318df57-0a51-4a59-816f-460c122ad5f4",
+   "metadata": {},
+   "source": [
+    "For simplicity let's take a small subset of the available input features. We also skip all categorial features as they would be needed to be converted to numerical."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "27c2498a-25a7-422b-aa3e-6ee72b680bd6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn.utils import shuffle\n",
+    "import numpy as np\n",
+    "\n",
+    "features = [\n",
+    "        \"YrSold\",\n",
+    "#        \"HeatingQC\",\n",
+    "#        \"Street\",\n",
+    "        \"YearRemodAdd\",\n",
+    "#        \"Heating\",\n",
+    "#        \"MasVnrType\",\n",
+    "#        \"BsmtUnfSF\",\n",
+    "#        \"Foundation\",\n",
+    "        \"MasVnrArea\",\n",
+    "        \"MSSubClass\",\n",
+    "#        \"ExterQual\",\n",
+    "#        \"Condition2\",\n",
+    "        \"GarageCars\",\n",
+    "#        \"GarageType\",\n",
+    "        \"OverallQual\",\n",
+    "        \"TotalBsmtSF\",\n",
+    "        \"BsmtFinSF1\",\n",
+    "#        \"HouseStyle\",\n",
+    "#        \"MiscFeature\",\n",
+    "        \"MoSold\",\n",
+    "]\n",
+    "\n",
+    "X = X.loc[:, features]\n",
+    "print(X.head())\n",
+    "\n",
+    "\n",
+    "X, y = shuffle(X, y, random_state=666)\n",
+    "\n",
+    "\n",
+    "X_train = X.iloc[:1000]\n",
+    "y_train = y.iloc[:1000]\n",
+    "X_test = X.iloc[1000:]\n",
+    "y_test = y.iloc[1000:]\n",
+    "\n",
+    "X_train=X_train.values\n",
+    "y_train=y_train.values\n",
+    "X_test=X_test.values\n",
+    "y_test=y_test.values\n",
+    "\n",
+    "print(X_train.shape)\n",
+    "print(f'Mean price (training): {np.mean(y_train)}')\n",
+    "\n",
+    "print(X_test.shape)\n",
+    "print(f'Mean price (test): {np.mean(y_test)}')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "59554b28-6f43-4c40-8f33-204464661d8f",
+   "metadata": {},
+   "source": [
+    "Sanity check baseline"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "1d5b834d-1b8f-414d-a22f-7964755a14d2",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn import metrics\n",
+    "\n",
+    "y_pred = np.ones(y_test.shape)*np.mean(y_train)\n",
+    "\n",
+    "print('MAE:', metrics.mean_absolute_error(y_test, y_pred))\n",
+    "print('MSE:', metrics.mean_squared_error(y_test, y_pred))\n",
+    "print('RMSE:', np.sqrt(metrics.mean_squared_error(y_test, y_pred)))\n",
+    "print('R2:', metrics.r2_score(y_test, y_pred))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "a055bbeb-d434-4510-82bd-702f7957d74f",
+   "metadata": {},
+   "source": [
+    "Baseline - linear regression (fails, but why?)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "cb5badca-72a5-4f65-9741-50f35933011d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn import linear_model\n",
+    "\n",
+    "# Create linear regression object\n",
+    "regr = linear_model.LinearRegression()\n",
+    "\n",
+    "# Train the model using the training sets\n",
+    "regr.fit(np.squeeze(X_train), np.squeeze(y_train))\n",
+    "\n",
+    "# Make predictions using the testing set\n",
+    "y_pred = regr.predict(X_test)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9e187df3-5895-4cf9-84d1-862a12032b0b",
+   "metadata": {},
+   "source": [
+    "Let's use Pandas style to replace missing values and re-do our stuff."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "21f43311-0c02-4f55-8d98-6b26b16dc88a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(np.argwhere(np.isnan(X_train)))\n",
+    "print(X_train[102,:])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "7a1f4f72-88c9-48ca-b8a0-23c6dc61570b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "X_pure = X.apply(lambda x: x.fillna(x.mean()), axis=0)\n",
+    "\n",
+    "X_train = X_pure.iloc[:1000]\n",
+    "X_test = X_pure.iloc[1000:]\n",
+    "\n",
+    "X_train=X_train.values\n",
+    "X_test=X_test.values\n",
+    "\n",
+    "print(np.argwhere(np.isnan(X_train)))\n",
+    "print(X_train[102,:])\n",
+    "print(np.mean(X_train[:,2]))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6cc025a7-0e14-4f3a-a69c-9114e3b6ce2c",
+   "metadata": {},
+   "source": [
+    "Redo the baseline (linear regression)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "bcfd7141-1dc3-4b39-bf05-0bf3a2cecd55",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Create linear regression object\n",
+    "regr = linear_model.LinearRegression()\n",
+    "\n",
+    "# Train the model using the training sets\n",
+    "regr.fit(np.squeeze(X_train), np.squeeze(y_train))\n",
+    "\n",
+    "# Make predictions using the testing set\n",
+    "y_pred = regr.predict(X_test)\n",
+    "\n",
+    "print('MAE:', metrics.mean_absolute_error(y_test, y_pred))\n",
+    "print('MSE:', metrics.mean_squared_error(y_test, y_pred))\n",
+    "print('RMSE:', np.sqrt(metrics.mean_squared_error(y_test, y_pred)))\n",
+    "print('R2:', metrics.r2_score(y_test, y_pred))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1d579359-3f79-4cc3-941b-0b51bd96d968",
+   "metadata": {},
+   "source": [
+    "Random forest regressor"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d583bc8c-a6f9-49af-b2d0-72e772bbc5ae",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn.ensemble import RandomForestRegressor\n",
+    "\n",
+    "regr = RandomForestRegressor()\n",
+    "regr.fit(np.squeeze(X_train), np.squeeze(y_train))\n",
+    "y_pred = regr.predict(X_test)\n",
+    "\n",
+    "print('MAE:', metrics.mean_absolute_error(y_test, y_pred))\n",
+    "print('MSE:', metrics.mean_squared_error(y_test, y_pred))\n",
+    "print('RMSE:', np.sqrt(metrics.mean_squared_error(y_test, y_pred)))\n",
+    "print('R2:', metrics.r2_score(y_test, y_pred))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f258e843-daed-4edb-b55f-a2dc9f702a47",
+   "metadata": {},
+   "source": [
+    "## Clustering & other unsupervised learning\n",
+    "\n",
+    "Unsupervised ML not included to this course, but discussed in DATA.ML.100 and in other data analysis courses."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "7c3bd4fb-2343-4763-9997-f3b9dec15cbc",
+   "metadata": {},
+   "source": [
+    "## Reinforcement learning\n",
+    "\n",
+    "Part of this course. We go more advanced that the basics in DATA.ML.100"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6523abe1-d329-4f6e-b708-643aed3a7e25",
+   "metadata": {},
+   "source": [
+    "## References\n",
+    "\n",
+    " * DATA.ML.100"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.11.5"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
